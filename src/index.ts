@@ -1,28 +1,47 @@
 import _ from 'lodash';
+import packageArg, { Result as PackageArg } from 'npm-package-arg';
 
-import { FailedPackage, Package, SuccessfulPackage } from '@scrutiny/core';
-import { Builder, ObjectBuilder } from '@scrutiny/core/util';
+import { IFailedPackage, ISuccessfulPackage, Package } from '@scrutiny/core';
+import { Builder, ObjectBuilder, ValidateAs } from '@scrutiny/core/util';
 import deepInstallDetails from '@scrutiny/deep-install-details';
 
 // SCRIPT INFO
-// tslint:disable-next-line
+// tslint:disable-next-line:no-empty-interface
 export interface IScriptInformation {
+}
+function AssembleScriptInformation(/* source: Builder<IScriptInformation> */): IScriptInformation {
+  return {
+  };
 }
 
 // VERSION INFO
-// tslint:disable-next-line
+// tslint:disable-next-line:no-empty-interface
 export interface IVersionInformation {
+}
+function AssembleVersionInformation(/* source: Builder<IVersionInformation> */): IVersionInformation {
+  return {
+  };
 }
 
 // SECURITY INFO
-// tslint:disable-next-line
+// tslint:disable-next-line:no-empty-interface
 export interface ISecurityInformation {
+}
+function AssembleSecurityInformation(/* source: Builder<ISecurityInformation> */): ISecurityInformation {
+  return {
+  };
 }
 
 // AUTHOR INFO
 export interface IAuthorInformation {
   info: IAuthorSummary[];
 }
+function AssembleAuthorInformation(source: Builder<IAuthorInformation>): IAuthorInformation {
+  return {
+    info: ValidateAs.Required(source, 'info'),
+  };
+}
+
 export interface IAuthorSummary {
   author: string;
   publishedPackages: Package[];
@@ -30,18 +49,30 @@ export interface IAuthorSummary {
 
 // META INFO
 export interface IMetaInformation {
+  requestedPackages: Package[];
   allInstalledPackages: Package[];
-  successFullyInstalledPackages: SuccessfulPackage[];
-  failedInstalledPackages: FailedPackage[];
+  successFullyInstalledPackages: ISuccessfulPackage[];
+  failedInstalledPackages: IFailedPackage[];
   installErrors: IInstallErrorSummary[];
-  alphaPackages: SuccessfulPackage[];
-  betaPackages: SuccessfulPackage[];
+  alphaPackages: ISuccessfulPackage[];
+  betaPackages: ISuccessfulPackage[];
 }
+function AssembleMetaInformation(source: Builder<IMetaInformation>): IMetaInformation {
+  return {
+    requestedPackages: ValidateAs.Required(source, 'requestedPackages'),
+    allInstalledPackages: ValidateAs.Required(source, 'allInstalledPackages'),
+    successFullyInstalledPackages: ValidateAs.Required(source, 'successFullyInstalledPackages'),
+    failedInstalledPackages: ValidateAs.Required(source, 'failedInstalledPackages'),
+    installErrors: ValidateAs.Required(source, 'installErrors'),
+    alphaPackages: ValidateAs.Required(source, 'alphaPackages'),
+    betaPackages: ValidateAs.Required(source, 'betaPackages'),
+  };
+}
+
 export interface IInstallErrorSummary {
   error: string;
   count: number;
 }
-
 
 export interface IScrutinyAnalysis {
   scripts: IScriptInformation;
@@ -50,15 +81,24 @@ export interface IScrutinyAnalysis {
   authors: IAuthorInformation;
   meta: IMetaInformation;
 }
+function AssembleScrutinyAnalysis(source: Builder<IScrutinyAnalysis>): IScrutinyAnalysis {
+  return {
+    scripts: ValidateAs.Required(source, 'scripts'),
+    version: ValidateAs.Required(source, 'version'),
+    security: ValidateAs.Required(source, 'security'),
+    authors: ValidateAs.Required(source, 'authors'),
+    meta: ValidateAs.Required(source, 'meta'),
+  };
+}
 
-export async function analyse(...packageSpecifiers: string[]): Promise<IScrutinyAnalysis> {
+export async function analyse(...userPackageSpecifiers: string[]): Promise<IScrutinyAnalysis> {
   // Create Builder objects
-  let scriptsInfo: Builder<IScriptInformation> = ObjectBuilder.create<IScriptInformation>();
-  let versionInfo: Builder<IVersionInformation> = ObjectBuilder.create<IVersionInformation>();
-  let securityInfo: Builder<ISecurityInformation> = ObjectBuilder.create<ISecurityInformation>();
-  let authorInfo: Builder<IAuthorInformation> = ObjectBuilder.create<IAuthorInformation>();
-  let metaInfo: Builder<IMetaInformation> = ObjectBuilder.create<IMetaInformation>();
-  let scrutinyBuilder: Builder<IScrutinyAnalysis> = ObjectBuilder.create<IScrutinyAnalysis>({
+  let scriptsInfo: Builder<IScriptInformation> = ObjectBuilder.create(AssembleScriptInformation);
+  let versionInfo: Builder<IVersionInformation> = ObjectBuilder.create(AssembleVersionInformation);
+  let securityInfo: Builder<ISecurityInformation> = ObjectBuilder.create(AssembleSecurityInformation);
+  let authorInfo: Builder<IAuthorInformation> = ObjectBuilder.create(AssembleAuthorInformation);
+  let metaInfo: Builder<IMetaInformation> = ObjectBuilder.create(AssembleMetaInformation);
+  let scrutinyBuilder: Builder<IScrutinyAnalysis> = ObjectBuilder.create(AssembleScrutinyAnalysis, {
     scripts: scriptsInfo,
     version: versionInfo,
     security: securityInfo,
@@ -66,17 +106,19 @@ export async function analyse(...packageSpecifiers: string[]): Promise<IScrutiny
     meta: metaInfo,
   });
 
-  let allPackages: Package[] = await deepInstallDetails(...packageSpecifiers);
+  let packageSpecifiers: PackageArg[] = userPackageSpecifiers.map((s) => packageArg(s));
 
-  let successfullyInstalledPackages: SuccessfulPackage[] = allPackages.filter((pkg: Package) => pkg.didSucceed()) as SuccessfulPackage[];
-  let failedInstalledPackages: FailedPackage[] = allPackages.filter((pkg: Package) => pkg.didFail()) as FailedPackage[];
+  let allPackages: Package[] = await deepInstallDetails(...userPackageSpecifiers);
+
+  let successfullyInstalledPackages: ISuccessfulPackage[] = allPackages.filter((pkg: Package) => pkg.didSucceed()) as ISuccessfulPackage[];
+  let failedInstalledPackages: IFailedPackage[] = allPackages.filter((pkg: Package) => pkg.didFail()) as IFailedPackage[];
 
 
   // ------------------------
   // -- AUTHOR INFORMATION --
   // ------------------------
   // INFO
-  let packagesGroupedByAuthor = _.groupBy(successfullyInstalledPackages, (pkg: SuccessfulPackage) => pkg.details.publishAuthor);
+  let packagesGroupedByAuthor = _.groupBy(successfullyInstalledPackages, (pkg: ISuccessfulPackage) => pkg.details.publishAuthor);
   authorInfo.info = _.chain(packagesGroupedByAuthor)
     .toPairs()
     .map(([author, publishedPackages]) => {
@@ -94,6 +136,11 @@ export async function analyse(...packageSpecifiers: string[]): Promise<IScrutiny
   // ----------------------
   // -- META INFORMATION --
   // ----------------------
+  metaInfo.requestedPackages = _.chain(allPackages)
+    .filter((pkg: Package) => {
+      return _.some(packageSpecifiers, (pkgSpecifier) => pkg.name === pkgSpecifier.name);
+    })
+    .value();
   // ALL INSTALLED PACKAGES
   metaInfo.allInstalledPackages = allPackages;
   // SUCCESSFULLY INSTALLED PACKAGES
