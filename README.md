@@ -41,18 +41,18 @@ Overview information about dependencies of a project. How many dependencies a pa
 
 ## Backlog for v0.3.0 "First release"
 
-  - ~~Finish off this package (give it a name)~~
-  - ~~Make CLI depend on it so that it's thin AF~~
-  - Chuck all packages on GitHub
-  - Add npm binary to CLI project
-  - Write READMEs
-  - Setup CI/CD for all projects
-  - Setup npm release CD to release on GitHub
-  - Review package.JSONs … e.g description, License, etc.
-  - Review Logger levels across packages
-  - Real quick take a gander across projects for TODOs
-  - Review _base project for launch.json, package.json, etc.
-  - Support all forms of input string e.g. file://../my-cool-project
-  - Publish packages to NPM in the right order…
-  - Merge deep-install-details PR!!!
-  - Investigate multi-root workspace for Scrutiny
+  - [x] ~~Finish off this package (give it a name)~~
+  - [x] ~~Make CLI depend on it so that it's thin AF~~
+  - [x] ~~Chuck all packages on GitHub~~
+  - [x] ~~Add npm binary to CLI project~~
+  - [ ] Write READMEs
+  - [ ] Setup CI/CD for all projects
+  - [ ] Setup npm release CD to release on GitHub
+  - [ ] Review package.JSONs … e.g description, License, etc.
+  - [ ] Review Logger levels across packages
+  - [ ] Real quick take a gander across projects for TODOs
+  - [ ] Review _base project for launch.json, package.json, etc.
+  - [ ] Support all forms of input string e.g. file://../my-cool-project
+  - [ ] Publish packages to NPM in the right order…
+  - [ ] Merge deep-install-details PR!!!
+  - [x] ~~Investigate multi-root workspace for Scrutiny~~
